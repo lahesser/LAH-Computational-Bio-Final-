@@ -1,0 +1,444 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Automatic pdb calling has been turned ON\n"
+     ]
+    }
+   ],
+   "source": [
+    "%pdb\n",
+    "import re \n",
+    "import csv"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def get_inflammation_stats(demographics): \n",
+    "  \n",
+    "    Inflammation = {}\n",
+    "    with open('../Downloads/Cohort2_mappingfile.txt') as f: \n",
+    "        dr = csv.DictReader(f, delimiter = '\\t')\n",
+    "        for row in dr:\n",
+    "            matching = True\n",
+    "            for i in demographics:\n",
+    "                    if row[i] != demographics[i]: \n",
+    "                        matching = False\n",
+    "                        break \n",
+    "            if matching == True: \n",
+    "                my_inflam = row['s']\n",
+    "                Inflammation[my_inflam] = Inflammation.get(my_inflam, 0) + 1\n",
+    "    return(Inflammation)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'Non_Inflamed': 56, 'Inflamed': 14}"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#check that it works. I want it to return the number of Inflamed and Non-Inflamed for this demographic \n",
+    "get_inflammation_stats({'Gender': 'F', 'BMI_categorized': 'Normal'})"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Gender = []\n",
+    "BMI_category = ['Normal', 'Overweight', 'Obese']\n",
+    "Inflammation_status = []\n",
+    "Disease = []\n",
+    "with open('../Downloads/Cohort2_mappingfile.txt') as f: \n",
+    "    dr = csv.DictReader(f, delimiter = '\\t')\n",
+    "    for row in dr: \n",
+    "        Gender.append(row['Gender'])\n",
+    "        Inflammation_status.append(row['s'])\n",
+    "        Disease.append(row['Disease'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "1217\n",
+      "1217\n",
+      "1217\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(len(Gender))\n",
+    "print(len(Inflammation_status))\n",
+    "print(len(Disease))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#we want to find the number of inflamed / not inflamed individuals in each demographic group. \n",
+    "\n",
+    "#desired output: {UC: {Males: {Normal: {Inflamed:#, Noninflamed: #}, \n",
+    "#                              Overweight: {Inflamed:#, Noninflamed: #}, \n",
+    "#                              Obese: {Inflamed:#, Noninflamed: #}}, \n",
+    "#                      Females: etc. }\n",
+    "\n",
+    "def get_all_categories_diseases(category): \n",
+    "    \n",
+    "    categorized_inflammation_by_disease = {}\n",
+    "    Genders = ['M', 'F']\n",
+    "    disease_types = [\"UC\", \"CD\"]\n",
+    "    \n",
+    "    for disease in list(disease_types): \n",
+    "        categorized_inflammation_by_disease[disease] = {}\n",
+    "        for gender in list(Genders): \n",
+    "            categorized_inflammation_by_disease[disease][gender] = {}\n",
+    "            for i in list(category): \n",
+    "                categorized_inflammation_by_disease[disease][gender][i] = get_inflammation_stats({'Disease': disease, \n",
+    "                                                                                       'Gender': gender, \n",
+    "                                                                                       'BMI_categorized': i})\n",
+    "    return(categorized_inflammation_by_disease)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "{'UC': {'M': {'Normal': {'Non_Inflamed': 22, 'Inflamed': 10, 'Unknown': 1}, 'Overweight': {'Non_Inflamed': 29, 'Inflamed': 9}, 'Obese': {'Non_Inflamed': 14, 'Inflamed': 2}}, 'F': {'Normal': {'Non_Inflamed': 17, 'Inflamed': 6}, 'Overweight': {'Non_Inflamed': 11, 'Inflamed': 3}, 'Obese': {'Non_Inflamed': 6}}}, 'CD': {'M': {'Normal': {'Non_Inflamed': 38, 'Inflamed': 7}, 'Overweight': {'Non_Inflamed': 28, 'Inflamed': 7}, 'Obese': {'Inflamed': 3, 'Non_Inflamed': 2}}, 'F': {'Normal': {'Non_Inflamed': 33, 'Inflamed': 8}, 'Overweight': {'Non_Inflamed': 6}, 'Obese': {'Non_Inflamed': 12, 'Inflamed': 2}}}}\n"
+     ]
+    }
+   ],
+   "source": [
+    "categorized_inflammation_by_disease = get_all_categories_diseases(BMI_category)\n",
+    "print(categorized_inflammation_by_disease)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "{'UC': {'M': {'Normal': 31.2, 'Overweight': 23.7, 'Obese': 12.5}, 'F': {'Normal': 26.1, 'Overweight': 21.4, 'Obese': 0.0}}, 'CD': {'M': {'Normal': 15.6, 'Overweight': 20.0, 'Obese': 60.0}, 'F': {'Normal': 19.5, 'Overweight': 0.0, 'Obese': 14.299999999999999}}}\n",
+      "No inflamed control subjects; frequency is zero for all groups\n"
+     ]
+    }
+   ],
+   "source": [
+    "disease_types = [\"UC\", \"CD\"]\n",
+    "Genders = ['M', 'F']           #these lists had been defined previously, but only within a function\n",
+    "categorized_inflammation_by_disease = {\n",
+    "    'UC': {'M': {'Normal': {'Non_Inflamed': 22, 'Inflamed': 10, 'Unknown': 1},\n",
+    "   'Overweight': {'Non_Inflamed': 29, 'Inflamed': 9},\n",
+    "   'Obese': {'Non_Inflamed': 14, 'Inflamed': 2}},\n",
+    "  'F': {'Normal': {'Non_Inflamed': 17, 'Inflamed': 6},\n",
+    "   'Overweight': {'Non_Inflamed': 11, 'Inflamed': 3},\n",
+    "   'Obese': {'Non_Inflamed': 6, 'Inflamed': 0}}},           #must manually add Inflamed = 0\n",
+    " 'CD': {'M': {'Normal': {'Non_Inflamed': 38, 'Inflamed': 7},\n",
+    "   'Overweight': {'Non_Inflamed': 28, 'Inflamed': 7},\n",
+    "   'Obese': {'Inflamed': 3, 'Non_Inflamed': 2}},\n",
+    "  'F': {'Normal': {'Non_Inflamed': 33, 'Inflamed': 8},\n",
+    "   'Overweight': {'Non_Inflamed': 6, 'Inflamed': 0},\n",
+    "   'Obese': {'Non_Inflamed': 12, 'Inflamed': 2}}}}\n",
+    "\n",
+    "\n",
+    "Inflam_prop_by_disease = {}\n",
+    "for disease in list(disease_types): \n",
+    "    Inflam_prop_by_disease[disease] = {}\n",
+    "    for gender in list(Genders): \n",
+    "        Inflam_prop_by_disease[disease][gender] = {}\n",
+    "        for BMI in list(BMI_category): \n",
+    "            Inflam_prop_by_disease[disease][gender][BMI] = round(categorized_inflammation_by_disease[disease][gender][BMI]['Inflamed'] / \n",
+    "                                                (categorized_inflammation_by_disease[disease][gender][BMI]['Inflamed'] + \n",
+    "                                                 categorized_inflammation_by_disease[disease][gender][BMI]['Non_Inflamed']), \n",
+    "                                                    3) * 100 \n",
+    "print(Inflam_prop_by_disease)\n",
+    "print('No inflamed control subjects; frequency is zero for all groups')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#graph our data for inflammation proportion of different cohorts. We need to turn the dictionary \n",
+    "#into a Data Frame so that the pandas can read it. \n",
+    "\n",
+    "import pandas as pd \n",
+    "\n",
+    "categorized_inflammation_UC = {'Males': {'Normal': 31.2, 'Overweight': 23.7, 'Obese': 12.5}, \n",
+    "                               'Females': {'Normal': 26.1, 'Overweight': 21.4, 'Obese': 0.0}}\n",
+    "categorized_inflammation_CD = {'Males': {'Normal': 15.6, 'Overweight': 20.0, 'Obese': 60.0}, \n",
+    "                               'Females': {'Normal': 19.5, 'Overweight': 0.0, 'Obese': 14.3}}\n",
+    "\n",
+    "df = pd.concat({\"CD\": pd.DataFrame(categorized_inflammation_CD), \n",
+    "                        \"UC\": pd.DataFrame(categorized_inflammation_UC)}).unstack(0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead tr th {\n",
+       "        text-align: left;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr>\n",
+       "      <th></th>\n",
+       "      <th colspan=\"2\" halign=\"left\">Males</th>\n",
+       "      <th colspan=\"2\" halign=\"left\">Females</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th></th>\n",
+       "      <th>CD</th>\n",
+       "      <th>UC</th>\n",
+       "      <th>CD</th>\n",
+       "      <th>UC</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>Normal</th>\n",
+       "      <td>15.6</td>\n",
+       "      <td>31.2</td>\n",
+       "      <td>19.5</td>\n",
+       "      <td>26.1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Obese</th>\n",
+       "      <td>60.0</td>\n",
+       "      <td>12.5</td>\n",
+       "      <td>14.3</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Overweight</th>\n",
+       "      <td>20.0</td>\n",
+       "      <td>23.7</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>21.4</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "           Males       Females      \n",
+       "              CD    UC      CD    UC\n",
+       "Normal      15.6  31.2    19.5  26.1\n",
+       "Obese       60.0  12.5    14.3   0.0\n",
+       "Overweight  20.0  23.7     0.0  21.4"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead tr th {\n",
+       "        text-align: left;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr>\n",
+       "      <th></th>\n",
+       "      <th colspan=\"2\" halign=\"left\">Males</th>\n",
+       "      <th colspan=\"2\" halign=\"left\">Females</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th></th>\n",
+       "      <th>CD</th>\n",
+       "      <th>UC</th>\n",
+       "      <th>CD</th>\n",
+       "      <th>UC</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>Normal</th>\n",
+       "      <td>15.6</td>\n",
+       "      <td>31.2</td>\n",
+       "      <td>19.5</td>\n",
+       "      <td>26.1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Overweight</th>\n",
+       "      <td>20.0</td>\n",
+       "      <td>23.7</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>21.4</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Obese</th>\n",
+       "      <td>60.0</td>\n",
+       "      <td>12.5</td>\n",
+       "      <td>14.3</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "           Males       Females      \n",
+       "              CD    UC      CD    UC\n",
+       "Normal      15.6  31.2    19.5  26.1\n",
+       "Overweight  20.0  23.7     0.0  21.4\n",
+       "Obese       60.0  12.5    14.3   0.0"
+      ]
+     },
+     "execution_count": 12,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#I thought the re-indexing would change the layout of the graph into more relevant BMI order but it did not. \n",
+    "df.reindex(['Normal', 'Overweight', 'Obese'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 25,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "Text(0, 0.5, 'Individuals Inflamed at Diagnosis (%)')"
+      ]
+     },
+     "execution_count": 25,
+     "metadata": {},
+     "output_type": "execute_result"
+    },
+    {
+     "data": {
+      "image/png": "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8vbbbwPQokULJk+eDMAnn3zC0Ucfzbx587jwwgvp1q0bM2bMYPr06bRr164ksefK10ewdURcQDKGQDeAiPgoIk4Gfl+M4MzMRo8ezaGHHlo53aJFC7bddlsqqg3ce++9DBo0qHL5Y489xk477USvXr3Yd999KyuS5vr000/5/ve/T58+fejTpw8vvvgiAM8++yw9e/akZ8+e9OrViwULFtQY13vvvcfLL7/MJZdcQpMmyUdpx44d6d+//yrrbrHFFowcOZIbbrihspjdgAEDKusnlVq+RDBS0mTgZWClW/EiYnJBozIzA7766iumTp1K+/btV5p/1FFHcc899zBjxgyaNm3Kt771rcplu+++Oy+99BKTJk3iqKOO4oorrlhlv2effTY///nPeeWVV3jwwQc5+eSTgWR4zN///vdMnjyZ559/nhYtWtQY25tvvknPnj0rz1Rq07FjR1asWFFZlK537948//zzmbYttBqbhiLid8DvihiLmdlKZs+ezcYbb7zK/AMOOIChQ4fyjW98gx/84AcrLZsxYwY/+MEPmDlzJl999RUdOnRYZfunnnqKt956q3J6/vz5LFiwgN12241f/OIXHHPMMQwcOJC2bdvW68+TW9ttiy224KOPPqrX/ddVvs7iCyRtkmd5X0kHFyYsM7OkGWjx4sWrzF933XXZYYcduPrqq1cafB7gzDPP5IwzzuD111/nT3/6U7Xbr1ixgn//+99MnjyZyZMn8+GHH9KyZUvOO+88br75ZhYtWsTOO+/MO++8U2NsXbt25dVXX63sAK7N1KlTadq0KVtskQzTvnjx4rxnHMWUr2nodeBxSWMkXSnpl5L+T9Kdkl4HBpA0G5mZFcQmm2zC8uXLq/0wHzJkCL/97W9p3br1SvPnzZvHlltuCVBj6ej99tuPG264oXK6olP3vffeo1u3bvzqV7+id+/elYngu9/97ir76NSpE71792bYsGGV3/SnTJnCI4+sOujip59+ymmnncYZZ5xRObjNf//7X7bbbrtafwfFkO8+gkciYjfgNOBNoCkwH7gL2DEifh4RnxYnTDNrCCLq95HFfvvtt9LQlBW6du3K4MGDV5k/fPhwjjzySPbYYw8226z6upgjRoyoHGugS5cu3HjjjQBcd911bLfddvTo0YMWLVpw4IEHMnv27GpHKwO4+eab+fjjj/n2t79N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koxbvKTej25mlkd1Zairaxp64oknePTRRyvb8xcvXsz06dMB2GeffWjZsiUtW7Zko402YsCAAQB069aN1157DUg+oC+44AI+//xzFi5cyP7777/S/hcuXMi//vWvlW4EW7Ik+UjcbbfdOP744xk0aBADBw6sx5+eVWocFap0dZZE8CUwWdIYcpJBRNRf4Q0zs2rUVIa6qojgwQcfZJtttllp/ssvv8x6661XOd2kSZPK6SZNmrBs2TIAjj/+eP7yl7/Qo0cPRo0axTPPPLPSflasWMHGG29cbd/EjTfeyMsvv8xf//pXevbsyeTJk1epiFqha9euPPDAA7X+PBUmTZq0Uv2gQpWuztI09ChwMfAvYELOw8ysoPKVoc61//7787vf/a7yG3RFh2tWCxYsoE2bNixdupTRo0evsrxVq1Z06NCB+++/H0gSz6uvvgokTVU77bQTF110EZttthkffPABH374If36rVpSrW/fvixZsoSbbrqpct4rr7zCs88+u8q606ZN45xzzuHMM8+snFeo0tVZLh+9vbpHvUdiZg1fRP0+MqgoQ53P0KFDWbp0Kd27d2e77bZj6NChq/VjXXzxxey0005873vfq3HsgdGjR3PLLbfQo0cPunbtWtkhfe6559KtWze222479txzT3r06MHMmTNZZ51VG1wk8fDDD/Pkk0/SqVMnunbtyvDhwyuH2nzvvfcqLx8dNGgQZ555Jiec8HWNz7Fjx9K/f//V+tmyyFKG+nWSISdzzQPGA5ek1UQLymWoLSuXoa5fLkNdNzfccAPt2rXjkEPq77qaWbNmcfTRRzNmzJhqlxe6DPXfgeXA3en0USR3GM8DRpEMZm9mVhClLkNdF2eccUa973P69OlcffXV9b5fyJYIdouI3XKmX5f0YkTsJulHBYnKzCxHYytDXRd9+vQp2L6zdBZvKGmniglJOwIbppPLChKVmZkVTZYzgpOBWyVtSNIkNB84OR2H2OMSmJmt5bKMUPYK0E3SRiSdy5/nLL6vYJGZmVlRZCo6J6k/0BVong5XSURcVMC4zMysSGpNBJJuBNYH9gFuBo4AxhU4LjNrgC6s6/W5NRiW4brdRYsWccABB/D000/zwQcfsO222650B/G4ceNYd9116zWuCsOHD2fDDTfknHPqp87mtGnTOPjgg3njjTdqPMZVV13FzTffzDrr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\n",
+      "text/plain": [
+       "<Figure size 432x288 with 1 Axes>"
+      ]
+     },
+     "metadata": {
+      "needs_background": "light"
+     },
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "Inflam_plot = df.plot.bar(title = \"Frequency of Inflammation in Two IBD Conditions\",  \n",
+    "                     color = ['blue', 'navy', 'red', 'maroon'])\n",
+    "Inflam_plot.set_xlabel('BMI', fontsize = 14)\n",
+    "Inflam_plot.set_ylabel('Individuals Inflamed at Diagnosis (%)')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.1"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
